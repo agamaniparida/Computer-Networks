@@ -1,5 +1,3 @@
-X,A,D,0,255,Hello World,Y
-X,A,D,1,255,Hello World,Y
-X,A,D,2,255,Hello World,Y
-X,A,D,3,255,Hello World,Y
-X,A,D,4,255,Hello World,Y
+4085546805|4|1
+4086668821|3|0
+4086808821|2|1

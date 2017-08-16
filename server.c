@@ -13,29 +13,13 @@ int counter=0;
 struct Packet 
 {
    char  sPackID[2];
-   char  clID;
-   char  dataTP[2];
+   uint8_t  clID;
+   char  acc_Per[2];
    uint8_t  segNo;
    uint8_t length;
-   char  actMessage[BUFLEN];
+   uint8_t technology;
+   unsigned int src_Sub_num;
    char  endID[2];
-};
-struct Acknowlegemnt 
-{
-   char  ack_sPackID[2];
-   char  ack_clID;
-   char  ack_dataTP[2];
-   uint8_t  ack_segNo;
-   char  ack_endID[2];
-};
-struct Rejection 
-{
-   char  rej_sPackID[2];
-   char  rej_clID;
-   char  rej_dataTP[2];
-   char  rej_subcode[3];
-   uint8_t  rej_segNo;
-   char  rej_endID[2];
 };
 void die(char *s)
 {
@@ -48,13 +32,55 @@ void delay(unsigned int mseconds)
     clock_t goal = ms + clock();
     while (goal > clock());
 }
+int checkData(unsigned int sNum, int technology)
+{
+    char *item;
+    int reccount = 0;
+    char lyne[15];
+    FILE *fp;   
+    fp = fopen("TST.txt","r"); // read mode
+
+    if( fp == NULL )
+    {
+    perror("Error while opening the file.\n");
+    exit(EXIT_FAILURE);
+    }  
+    unsigned int subNumVal = 0; 
+    int technologyNUM =0; 
+    int paidNUM =0;
+    while(fgets(lyne,15,fp)) 
+    {
+        item = strtok(lyne,"|");
+        //printf("Value Found %u - %u\n", sNum, atoi(item));
+        if(sNum == atoi(item))
+        {
+          item = strtok(NULL,"|");
+          if(technology == atoi(item))
+          {
+            item = strtok(NULL,"\n");
+            if(atoi(item)==1)
+            {
+              //Subscriber paid
+              return 1;
+              break;
+            }
+            else
+            {
+              //Subscriber Not Paid
+              return 2;
+              break;
+            }
+          }
+        }
+        reccount++;
+    }
+    return 0;
+}
 int main(void)
 {
     clear();
     struct sockaddr_in si_me, si_other;
     struct Packet Packet1;
-    struct Acknowlegemnt ack1;
-    struct Rejection rej1;
     int s, slen = sizeof(si_other) , recv_len;
     char buf[BUFLEN];
     //create a UDP socket
@@ -68,7 +94,6 @@ int main(void)
     si_me.sin_family = AF_INET;
     si_me.sin_port = htons(PORT);
     si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-    
     //bind socket to port
     if( bind(s , (struct sockaddr*)&si_me, sizeof(si_me) ) == -1)
     {
@@ -79,115 +104,59 @@ int main(void)
     {
         printf("Waiting for data...");
         fflush(stdout);
-        printf("\n****************************\n");
-        printf("\nCounter %d\n",counter);
-        printf("\n****************************\n");
+        printf("\n---------\n");
+        printf("Counter %d\n",counter);
+        printf("---------\n");
 
         //try to receive some data, this is a blocking call
-        if ((recv_len = recvfrom(s, &Packet1, sizeof(Packet1)-1, 0, (struct sockaddr *) &si_other, &slen)) == -1)
+        if ((recv_len = recvfrom(s, &Packet1, BUFLEN, 0, (struct sockaddr *) &si_other, &slen)) == -1)
         {
             die("recvfrom()");
         }
-        printf("Message Received packet from %s:%d\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
-        //printf("Data: %s\n" , Packet1.actMessage);
+
+        int paidStatus = checkData(Packet1.src_Sub_num, Packet1.technology);
+       
         if(counter==4)
         {
-            delay(1);
+            delay(6);
         }
-        printf("---------------------------");
-        printf("\n|%s|%c|%s|%d|%d|%s|%s|\n", Packet1.sPackID,Packet1.clID,Packet1.dataTP,Packet1.segNo,Packet1.length,Packet1.actMessage,Packet1.endID);
-        printf("---------------------------\n");
+        if(paidStatus ==1)
+        {
+            printf("Acknowledgement Block : Subscriber is permitted to access\n");
+            strcpy(Packet1.acc_Per,"P");
+            printf("--------------------------\n");
+            printf("|%s|%d|%s|%d|%d|%d|%u|%s|\n", Packet1.sPackID,Packet1.clID,Packet1.acc_Per,Packet1.segNo,Packet1.length,Packet1.technology,Packet1.src_Sub_num,Packet1.endID);
+            printf("--------------------------\n");
+            if (sendto(s, &Packet1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
+            {
+                die("sendto()");
+            }
+        }
+        else if(paidStatus ==2)
+        {
+            printf("Rejection Block : Subscriber has not paid\n");
+            strcpy(Packet1.acc_Per,"Q");
+            printf("--------------------------\n");
+            printf("|%s|%d|%s|%d|%d|%d|%u|%s|\n", Packet1.sPackID,Packet1.clID,Packet1.acc_Per,Packet1.segNo,Packet1.length,Packet1.technology,Packet1.src_Sub_num,Packet1.endID);
+            printf("--------------------------\n");
+            if (sendto(s, &Packet1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
+            {
+                die("sendto()");
+            }
+        }
+        else if(paidStatus ==0)
+        {
+            printf("Rejection Block : Subscriber does not exist\n");
+            strcpy(Packet1.acc_Per,"R");
+            printf("--------------------------\n");
+            printf("|%s|%d|%s|%d|%d|%d|%u|%s|\n", Packet1.sPackID,Packet1.clID,Packet1.acc_Per,Packet1.segNo,Packet1.length,Packet1.technology,Packet1.src_Sub_num,Packet1.endID);
+            printf("--------------------------\n");
+            if (sendto(s, &Packet1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
+            {
+                die("sendto()");
+            }
+        }
 
-        if(Packet1.length != strlen(Packet1.actMessage))
-        {
-            strcpy( rej1.rej_sPackID, Packet1.sPackID);
-            rej1.rej_clID= Packet1.clID;
-            strcpy( rej1.rej_dataTP, "R"); 
-            strcpy( rej1.rej_subcode, "O");
-            printf("Rejecttion Sub Code %s\n", rej1.rej_subcode);
-            rej1.rej_segNo= Packet1.segNo;
-            strcpy(rej1.rej_endID,Packet1.endID);
-            if (sendto(s, &rej1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
-            {
-                die("sendto()");
-            }
-            printf("Sending Rejection : Due to Mismatch Payload length\n--------------\n");
-            printf("|%s|%c|%s|%s|%d|%s|\n", rej1.rej_sPackID,rej1.rej_clID,rej1.rej_dataTP,rej1.rej_subcode,rej1.rej_segNo,rej1.rej_endID);
-            printf("--------------\n");
-        }
-        else if(counter == Packet1.segNo)
-        {
-            if (!Packet1.endID || (!*Packet1.endID) == 0)
-            {
-                strcpy( ack1.ack_sPackID, Packet1.sPackID);
-                ack1.ack_clID=Packet1.clID;
-                strcpy( ack1.ack_dataTP, "A"); 
-                ack1.ack_segNo= Packet1.segNo;
-                strcpy(ack1.ack_endID,Packet1.endID);
-                if (sendto(s, &ack1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
-                {
-                    die("sendto()");
-                }
-                printf("Sending Acknowledgement : \n------------\n");
-                printf("|%s|%c|%s|%d|%s|\n", ack1.ack_sPackID,ack1.ack_clID,ack1.ack_dataTP,ack1.ack_segNo,ack1.ack_endID);
-                printf("------------\n");
-            }
-            else
-            {
-                //Create Rejection
-                //printf("Sending Rejection : Due to End ID Missing\n");
-                strcpy( rej1.rej_sPackID, Packet1.sPackID);
-                rej1.rej_clID= Packet1.clID;
-                strcpy( rej1.rej_dataTP, "R"); 
-                strcpy( rej1.rej_subcode, "L");
-                rej1.rej_segNo= Packet1.segNo;
-                strcpy(rej1.rej_endID,Packet1.endID);
-                if (sendto(s, &rej1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
-                {
-                    die("sendto()");
-                }
-                printf("Sending Rejection : Due to Missing End ID\n--------------\n");
-                printf("|%s|%c|%s|%s|%d|%s|\n", rej1.rej_sPackID,rej1.rej_clID,rej1.rej_dataTP,rej1.rej_subcode,rej1.rej_segNo,rej1.rej_endID);
-                printf("--------------\n");
-            } 
-        }
-        else if(counter < Packet1.segNo)
-        {
-            //printf("Sending Rejection : Due to Skipping One of the segment\n");
-            strcpy( rej1.rej_sPackID, Packet1.sPackID);
-            rej1.rej_clID= Packet1.clID;
-            strcpy( rej1.rej_dataTP, "R"); 
-            strcpy( rej1.rej_subcode, "M");
-            rej1.rej_segNo= Packet1.segNo;
-            strcpy(rej1.rej_endID,Packet1.endID);
-            printf("Rejecttion Sub Code %s\n", rej1.rej_subcode);
-            if (sendto(s, &rej1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
-            {
-                die("sendto()");
-            }
-            printf("Sending Rejection : Due to Sequence Miss Match\n--------------\n");
-            printf("|%s|%c|%s|%s|%d|%s|\n", rej1.rej_sPackID,rej1.rej_clID,rej1.rej_dataTP,rej1.rej_subcode,rej1.rej_segNo,rej1.rej_endID);
-            printf("--------------\n");
-        }
-        else if(counter > Packet1.segNo)
-        {
-            //printf("Sending Rejection : Due to Duplicate Sequence %c\n", Packet1.segNo);
-            strcpy( rej1.rej_sPackID, Packet1.sPackID);
-            rej1.rej_clID= Packet1.clID;
-            strcpy( rej1.rej_dataTP, "R"); 
-            strcpy( rej1.rej_subcode, "N");
-            printf("Rejecttion Sub Code %s\n", rej1.rej_subcode);
-            rej1.rej_segNo= Packet1.segNo;
-            strcpy(rej1.rej_endID,Packet1.endID);
-            if (sendto(s, &rej1, recv_len, 0, (struct sockaddr*) &si_other, slen) == -1)
-            {
-                die("sendto()");
-            }
-            printf("Sending Rejection : Due to Duplicate Sequence\n--------------\n");
-            printf("|%s|%c|%s|%s|%d|%s|\n", rej1.rej_sPackID,rej1.rej_clID,rej1.rej_dataTP,rej1.rej_subcode,rej1.rej_segNo,rej1.rej_endID);
-            printf("--------------\n");
-        }
-        
         counter++;  
     }
     close(s);

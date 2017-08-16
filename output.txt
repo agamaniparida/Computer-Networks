@@ -1,0 +1,31 @@
+---------
+Counter 0
+---------
+Acknowledgement Block : Subscriber is permitted to access
+--------------------------
+|X|1|P|0|4|4|4085546805|Y
+--------------------------
+Waiting for data...
+---------
+Counter 1
+---------
+Rejection Block : Subscriber has not paid
+--------------------------
+|X|1|Q|1|4|3|4086668821|Y|
+--------------------------
+Waiting for data...
+---------
+Counter 2
+---------
+Acknowledgement Block : Subscriber is permitted to access
+--------------------------
+|X|1|P|2|4|2|4086808821|Y|
+--------------------------
+Waiting for data...
+---------
+Counter 3
+---------
+Rejection Block : Subscriber does not exist
+--------------------------
+|X|1|R|3|4|4|4081231234|Y|
+--------------------------
