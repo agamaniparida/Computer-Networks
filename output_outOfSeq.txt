@@ -1,0 +1,30 @@
+Counter 0
+
+Message Transmitted: 
+---------------------------
+|X|D|D|0|11|Hello World|Y
+---------------------------
+Acknowledgement Received: 
+------------
+|X|D|A|0|Y|
+------------
+Counter 1
+
+Message Transmitted: 
+---------------------------
+|X|D|D|1|11|Hello World|Y|
+---------------------------
+Acknowledgement Received: 
+------------
+|X|D|A|1|Y|
+------------
+Counter 2
+
+Message Transmitted: 
+---------------------------
+|X|D|D|3|11|Hello World|Y|
+---------------------------
+Rejection Received: Due to Sequence Miss Match
+--------------
+|X|D|R|M|3|Y|
+--------------

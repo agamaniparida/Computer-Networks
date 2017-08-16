@@ -1,0 +1,50 @@
+Counter 0
+
+Message Transmitted: 
+---------------------------
+|X|D|D|0|11|Hello World|Y
+---------------------------
+Acknowledgment Received: 
+------------
+|X|D|A|0|Y|
+------------
+Counter 1
+
+Message Transmitted: 
+---------------------------
+|X|D|D|1|11|Hello World|Y|
+---------------------------
+Acknowledgment Received: 
+------------
+|X|D|A|1|Y|
+------------
+Counter 2
+
+Message Transmitted: 
+---------------------------
+|X|D|D|2|11|Hello World|Y|
+---------------------------
+Acknowledgment Received: 
+------------
+|X|D|A|2|Y|
+------------
+Counter 3
+
+Message Transmitted: 
+---------------------------
+|X|D|D|3|11|Hello World|Y|
+---------------------------
+Acknowledgment Received: 
+------------
+|X|D|A|3|Y|
+------------
+Counter 4
+
+Message Transmitted: 
+---------------------------
+|X|D|D|4|11|Hello World|Y|
+---------------------------
+Timed occurred for the Attempt #1 ... Sending Once again
+Timed occurred for the Attempt #2 ... Sending Once again
+Timed occurred for the Attempt #3 
+Server Not Responding
